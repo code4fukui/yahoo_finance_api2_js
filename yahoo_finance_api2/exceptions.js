@@ -1,4 +1,5 @@
-class YahooFinanceError(Exception):
-
-    def __init__(self, message):
-        self.message = message
+export class YahooFinanceError extends Error {
+    constructor(message) {
+        super(message);
+    }
+}

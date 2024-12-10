@@ -1,119 +1,116 @@
-import datetime
-import pprint
-import requests
-import yaml
-from yahoo_finance_api2.exceptions import YahooFinanceError
+import { YahooFinanceError } from "./exceptions.js";
+import { DateTime } from "https://js.sabae.cc/DateTime.js";
 
-PERIOD_TYPE_DAY = 'day'
-PERIOD_TYPE_WEEK = 'week'
-PERIOD_TYPE_MONTH = 'month'
-PERIOD_TYPE_YEAR = 'year'
+export const PERIOD_TYPE_DAY = 'day';
+export const PERIOD_TYPE_WEEK = 'week';
+export const PERIOD_TYPE_MONTH = 'month';
+export const PERIOD_TYPE_YEAR = 'year';
 
-# Valid frequencies: [1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo]
-FREQUENCY_TYPE_MINUTE = 'm'
-FREQUENCY_TYPE_HOUR = 'h'
-FREQUENCY_TYPE_DAY = 'd'
-FREQUENCY_TYPE_WEEK = 'wk'
-FREQUENCY_TYPE_MONTH = 'mo'
+// Valid frequencies: [1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo]
+export const FREQUENCY_TYPE_MINUTE = 'm';
+export const FREQUENCY_TYPE_HOUR = 'h';
+export const FREQUENCY_TYPE_DAY = 'd';
+export const FREQUENCY_TYPE_WEEK = 'wk';
+export const FREQUENCY_TYPE_MONTH = 'mo';
 
-class Share(object):
+export class Share {
+    constructor(symbol) {
+        this.symbol = symbol;
+    }
 
-    def __init__(self, symbol):
-        self.symbol = symbol
+    async get_historical(period_type, period, frequency_type, frequency) {
+        const data = await this._download_symbol_data(period_type, period, frequency_type, frequency);
+        //console.log(data);
 
-
-    def get_historical(self, period_type, period, frequency_type, frequency):
-        data = self._download_symbol_data(period_type, period,
-                                          frequency_type, frequency)
-
-        valid_frequency_types = [
+        const valid_frequency_types = [
             FREQUENCY_TYPE_MINUTE, FREQUENCY_TYPE_HOUR, FREQUENCY_TYPE_DAY,
             FREQUENCY_TYPE_WEEK, FREQUENCY_TYPE_MONTH
         ]
 
-        if frequency_type not in valid_frequency_types:
-            raise ValueError('Invalid frequency type: ' % frequency_type)
-
-        # for i in range(len(data['timestamp'])):
-        #     if i < (len(data['timestamp']) - 1):
-        #         print(datetime.datetime.utcfromtimestamp(
-        #                 data['timestamp'][i + 1]
-        #             ).strftime('%Y-%m-%d %H:%M:%S'),
-        #             data['timestamp'][i + 1] - data['timestamp'][i]
-        #         )
-
-        if 'timestamp' not in data:
-            return None
-
-        return_data = {
-            'timestamp': [x * 1000 for x in data['timestamp']],
-            'open': data['indicators']['quote'][0]['open'],
-            'high': data['indicators']['quote'][0]['high'],
-            'low': data['indicators']['quote'][0]['low'],
-            'close': data['indicators']['quote'][0]['close'],
-            'volume': data['indicators']['quote'][0]['volume']
+        if (!valid_frequency_types.some(i => i == frequency_type)) {
+            throw new Error('Invalid frequency type: ' + frequency_type);
         }
 
-        return return_data
+        // for i in range(len(data['timestamp'])):
+        //     if i < (len(data['timestamp']) - 1):
+        //        print(datetime.datetime.utcfromtimestamp(
+        //                data['timestamp'][i + 1]
+        //            ).strftime('%Y-%m-%d %H:%M:%S'),
+        //            data['timestamp'][i + 1] - data['timestamp'][i]
+        //        )
 
+        if (!data.timestamp) {
+            return null;
+        }
 
-    def _set_time_frame(self, period_type, period):
-        now = datetime.datetime.now()
+        const return_data = {
+            timestamp: data.timestamp.map(x => x * 1000),
+            open: data['indicators']['quote'][0]['open'],
+            high: data['indicators']['quote'][0]['high'],
+            low: data['indicators']['quote'][0]['low'],
+            close: data['indicators']['quote'][0]['close'],
+            volume: data['indicators']['quote'][0]['volume']
+        };
 
-        if period_type == PERIOD_TYPE_DAY:
-            period = min(period, 59)
-            start_time = now - datetime.timedelta(days=period)
-        elif period_type == PERIOD_TYPE_WEEK:
-            period = min(period, 59)
-            start_time = now - datetime.timedelta(days=period * 7)
-        elif period_type == PERIOD_TYPE_MONTH:
-            period = min(period, 59)
-            start_time = now - datetime.timedelta(days=period * 30)
-        elif period_type == PERIOD_TYPE_YEAR:
-            period = min(period, 59)
-            start_time = now - datetime.timedelta(days=period * 365)
-        else:
-            raise ValueError('Invalid period type: ' % period_type)
+        return return_data;
+    }
 
-        end_time = now
+    _set_time_frame(period_type, period) {
+        const now = new DateTime().getTime() / 1000;
+        let start_time;
 
-        return int(start_time.timestamp()), int(end_time.timestamp())
+        const timedelta = (days) => days * 24 * 60 * 60;
 
+        if (period_type == PERIOD_TYPE_DAY) {
+            period = Math.min(period, 59);
+            start_time = now - timedelta(period);
+        } else if (period_type == PERIOD_TYPE_WEEK) {
+            period = min(period, 59);
+            start_time = now - timedelta(period * 7);
+        } else if (period_type == PERIOD_TYPE_MONTH) {
+            period = min(period, 59); // why 59?
+            start_time = now - timedelta(period * 30); // 30 fixed??
+        } else if (period_type == PERIOD_TYPE_YEAR) {
+            period = min(period, 59); // why 59?
+            start_time = now - timedelta(period * 365); // 365 fixed??
+        } else {
+            throw new Error('Invalid period type: ' + period_type);
+        }
 
-    def _download_symbol_data(self, period_type, period,
-                              frequency_type, frequency):
-        start_time, end_time = self._set_time_frame(period_type, period)
-        url = (
-            'https://query1.finance.yahoo.com/v8/finance/chart/{0}?symbol={0}'
-            '&period1={1}&period2={2}&interval={3}&'
-            'includePrePost=true&events=div%7Csplit%7Cearn&lang=en-US&'
-            'region=US&crumb=t5QZMhgytYZ&corsDomain=finance.yahoo.com'
-        ).format(self.symbol, start_time, end_time,
-                 self._frequency_str(frequency_type, frequency))
+        const end_time = now
 
-        headers = {'User-Agent': ''}
-        resp_json = requests.get(url, headers=headers).json()
+        return [Math.floor(start_time), Math.floor(end_time)];
+    }
 
-        if self._is_yf_response_error(resp_json):
-            self._raise_yf_response_error(resp_json)
-            return
+    async _download_symbol_data(period_type, period, frequency_type, frequency) {
+        const interval = this._frequency_str(frequency_type, frequency);
+        const [start_time, end_time] = this._set_time_frame(period_type, period);
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${this.symbol}?symbol=${this.symbol}` +
+            `&period1=${start_time}&period2=${end_time}&interval=${interval}&` +
+            `includePrePost=true&events=div%7Csplit%7Cearn&lang=en-US&` +
+            `region=US&crumb=t5QZMhgytYZ&corsDomain=finance.yahoo.com`;
 
-        data_json = resp_json['chart']['result'][0]
+        const resp_json = await (await fetch(url)).json();
 
-        return data_json
+        if (this._is_yf_response_error(resp_json)) {
+            this._raise_yf_response_error(resp_json);
+            return;
+        }
 
+        const data_json = resp_json.chart.result[0];
 
-    def _is_yf_response_error(self, resp):
-        return resp['chart']['error'] is not None
+        return data_json;
+    }
 
+    _is_yf_response_error(resp) {
+        return resp.chart.error;
+    }
 
-    def _raise_yf_response_error(self, resp):
-        raise YahooFinanceError(
-            '{0}: {1}'.format(
-                resp['chart']['error']['code'],
-                resp['chart']['error']['description']
-            )
-        )
+    _raise_yf_response_error(resp) {
+        throw new YahooFinanceError(resp.chart.error.code + ": " + resp.chart.error.description);
+    }
 
-    def _frequency_str(self, frequency_type, frequency):
-        return '{1}{0}'.format(frequency_type, frequency)
+    _frequency_str(frequency_type, frequency) {
+      return frequency + frequency_type;
+    }
+}

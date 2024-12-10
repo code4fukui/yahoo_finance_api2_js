@@ -7,7 +7,7 @@ Minimal API to interact with Yahoo Finance for Deno/JavaScript (forked from [pko
 The following example retrieves 10 days of 5 minute frequency Microsoft (MSFT) stock data.
 
 ```
-import * as share from "./yahoo_finance_api2/share.js";
+import * as share from "https://code4fukui.github.io/yahoo_finance_api2_js/share.js";
 
 const my_share = new share.Share('NBR');
 let symbol_data = null;

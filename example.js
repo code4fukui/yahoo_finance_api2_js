@@ -1,4 +1,4 @@
-import * as share from "./yahoo_finance_api2/share.js";
+import * as share from "./share.js";
 
 const my_share = new share.Share('NBR');
 let symbol_data = null;

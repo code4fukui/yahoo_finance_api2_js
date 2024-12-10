@@ -7,7 +7,7 @@ Minimal API to interact with Yahoo Finance for Deno/JavaScript (forked from [pko
 The following example retrieves 10 days of 5 minute frequency Microsoft (MSFT) stock data.
 
 ```sh
-deno
+> deno
 ```
 
 ```js

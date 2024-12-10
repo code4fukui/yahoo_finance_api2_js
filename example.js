@@ -4,7 +4,7 @@ const my_share = new share.Share('NBR');
 let symbol_data = null;
 
 try {
-    symbol_data = my_share.get_historical(share.PERIOD_TYPE_DAY,
+    symbol_data = await my_share.get_historical(share.PERIOD_TYPE_DAY,
                                           10,
                                           share.FREQUENCY_TYPE_MINUTE,
                                           5);

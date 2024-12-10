@@ -1,5 +1,4 @@
 import { YahooFinanceError } from "./exceptions.js";
-import { DateTime } from "https://js.sabae.cc/DateTime.js";
 
 export const PERIOD_TYPE_DAY = 'day';
 export const PERIOD_TYPE_WEEK = 'week';
@@ -56,7 +55,7 @@ export class Share {
     }
 
     _set_time_frame(period_type, period) {
-        const now = new DateTime().getTime() / 1000;
+        const now = new Date().getTime() / 1000;
         let start_time;
 
         const timedelta = (days) => days * 24 * 60 * 60;
